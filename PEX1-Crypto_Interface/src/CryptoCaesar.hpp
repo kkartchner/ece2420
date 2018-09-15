@@ -33,8 +33,8 @@ public:
 private:
   uint8_t *m_pubKey;
   uint32_t m_pubLen;
-  uint8_t *m_privKey;
-  uint32_t m_privLen;
+  uint8_t *m_priKey;
+  uint32_t m_priLen;
 };
 
 #endif /* CRYPTOCAESAR_HPP */

@@ -26,7 +26,20 @@ bool CryptoCaesar::getKeys(uint8_t **pubKey, uint32_t &pubLen,
 
 void CryptoCaesar::setKeys(const uint8_t *pubKey, uint32_t pubLen,
                        const uint8_t *priKey, uint32_t priLen)
-{
+{	
+	if (m_pubKey != nullptr){
+	    *m_pubKey = *pubKey;
+	} else {
+        m_pubKey = new uint8_t(*pubKey);
+    }
+	m_pubLen = pubLen;
+	
+	if (m_priKey != nullptr){
+	    *m_priKey = *priKey;
+	} else {
+        m_priKey = new uint8_t(*priKey);
+    }
+	m_priLen = priLen;
 }
 
 void CryptoCaesar::destroyKeys()
