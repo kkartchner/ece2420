@@ -5,13 +5,13 @@
 #include <vector>
 
 // The data to test
-const uint8_t message[] = "Hello";
+constexpr uint8_t message[] = "Hello";
 const int msg_len = sizeof(message) - 1;
 
 const uint8_t none_pub[] = {};
 
 // Caesar with key = 1
-const uint8_t caesar1[] = "Gdkkn";
+constexpr uint8_t caesar1[] = "Gdkkn";
 const uint8_t caesar1_pub[] = { 1 };
 
 // A template callback that validates it against an expected template argument
@@ -83,6 +83,7 @@ void doTest(Algorithm op, const char* op_name,
 			buffDecrypt.insert(buffDecrypt.end(), data, data + len);
 		},
 		op);
+	
 	testing->setKeys(pubKey, pubLen, priKey, priLen);
 
 	// Test the encrypt function

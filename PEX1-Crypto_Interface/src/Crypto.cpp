@@ -1,4 +1,8 @@
 #include "Crypto.hpp"
+#include "CryptoNone.hpp"
+#include "CryptoCaesar.hpp"
+
+#include <iostream>
 
 /**
  * @brief Constructor
@@ -17,8 +21,9 @@
  */
 Crypto::Crypto(std::function<void(const uint8_t *data, uint32_t len)> encryptCallback,
                std::function<void(const uint8_t *data, uint32_t len)> decryptCallback)
+	: m_encryptCallback(encryptCallback),
+	  m_decryptCallback(decryptCallback)
 {
-	
 }
 
 /**
@@ -32,6 +37,16 @@ Crypto::Crypto(std::function<void(const uint8_t *data, uint32_t len)> encryptCal
 std::shared_ptr<Crypto> Crypto::cryptoFactory(std::function<void(const uint8_t *data, uint32_t len)> encryptCallback,
                                               std::function<void(const uint8_t *data, uint32_t len)> decryptCallback,
                                               Algorithm algorithm)
-{
-	
+{	
+  std::shared_ptr<Crypto> cryptoObject;
+  switch(algorithm){
+    case Algorithm::eNONE:
+      cryptoObject.reset(new CryptoNone(encryptCallback, decryptCallback));
+      break;
+    case Algorithm::eCAESAR:
+      cryptoObject.reset(new CryptoCaesar(encryptCallback, decryptCallback));
+      break;
+  }
+  
+  return cryptoObject;
 }

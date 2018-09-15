@@ -12,7 +12,7 @@ DDIR = dep
 INC        = $(SDIR)
 INC_PARAMS = $(foreach d, $(INC), -I$d)
 DEPFLAGS   = -MT $@ -MMD -MP -MF $(DDIR)/$*.Td
-CPPFLAGS   = -std=c++14 -g
+CPPFLAGS   = -std=c++11 -g
 
 #The full command for compilation
 CPPC       = g++ $(CPPFLAGS) $(INC_PARAMS) $(DEPFLAGS)
