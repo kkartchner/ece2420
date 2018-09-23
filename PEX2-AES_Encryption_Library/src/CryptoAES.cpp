@@ -3,105 +3,139 @@
 #include <mcrypt.h>
 #include <cstring>
 
+#define DEBUG 0
+
 CryptoAES::CryptoAES(std::function<void(const uint8_t *data, uint32_t len)> encryptCallback,
 	    std::function<void(const uint8_t *data, uint32_t len)> decryptCallback) 
- : Crypto(encryptCallback, decryptCallback) {
-	 // m
+ : Crypto(encryptCallback, decryptCallback) {	 
+	 m_td = mcrypt_module_open((char*)"rijndael-128", nullptr , (char*)"cbc", nullptr);
 	 
+	 m_buffer = new uint8_t[BLOCK_SIZE];
+	 
+	 srand(time(0));
  }
 
 void CryptoAES::genKeys()
 {
-	std::cout << "Generating CryptoAES keys..." << std::endl;
+	if(DEBUG) std::cout << "Generating CryptoAES keys..." << std::endl;
 
 	// Generate array of 16 random bytes:
-	srand(time(0));
-	
 	m_key = new uint8_t[BLOCK_SIZE];
+	m_IV = new uint8_t[BLOCK_SIZE];
+	
 	for (int i = 0; i < BLOCK_SIZE; i++){
 		m_key[i] = rand();
-		std::cout << "m_key[" << i << "]: " << (int) m_key[i] << std::endl;
+		m_IV[i] = rand();
 	}
+	
+	mcrypt_generic_init(m_td, m_key, BLOCK_SIZE, m_IV);		
 		
 	
-	std::cout << "Keys have been generated" << std::endl;
+	if(DEBUG) std::cout << "Keys have been generated" << std::endl;
 }
 
 bool CryptoAES::getKeys(uint8_t **pubKey, uint32_t &pubLen,
                        uint8_t **priKey, uint32_t &priLen)
-{
-	std::cout << "Getting CryptoAES keys..." << std::endl;
+{	
+	if(DEBUG) std::cout << "Getting CryptoAES keys..." << std::endl;
 	
-	std::memcpy((*priKey) + 0, m_key, BLOCK_SIZE);
-	std::memcpy((*priKey) + BLOCK_SIZE, m_IV, BLOCK_SIZE);
-	priLen = BLOCK_SIZE;
+	if (m_key == nullptr){
+		if(DEBUG) std::cout << "Keys have not been set. Have genKeys() or setKeys() been called?" << std::endl;
+		return false;
+	} else {
+		*priKey = new uint8_t[BLOCK_SIZE*2];
+		
+		std::memcpy((*priKey) + 0, 		 m_key, BLOCK_SIZE);	
+		std::memcpy((*priKey) + BLOCK_SIZE, m_IV, BLOCK_SIZE);
 	
-	*pubKey = nullptr;
-	pubLen = 0;
+		priLen = BLOCK_SIZE * 2;
 	
-	//	mcrypt_generic_init(td, key, key_len, IV);	
+		*pubKey = nullptr;
+		pubLen = 0;	
 	
-	
-	std::cout << "Keys have been received" << std::endl;
-	return true;
+		if(DEBUG) std::cout << "Keys have been received" << std::endl;
+		return true;
+	}
 }
 
 void CryptoAES::setKeys(const uint8_t *pubKey, uint32_t pubLen,
                        const uint8_t *priKey, uint32_t priLen)
 {	
-	std::cout << "Setting CryptoAES to specified keys..." << std::endl;
-	if (priLen != BLOCK_SIZE){
-		std::cout << "Key is not the correct length. Must be 16 bytes.";
+	if(DEBUG) std::cout << "Setting CryptoAES to specified keys..." << std::endl;
+	
+	if (priLen != BLOCK_SIZE || priLen != BLOCK_SIZE * 2){
+		if(DEBUG) { std::cout << "Incorrect key length. Must be either 16 bytes if just the key" 
+				  << " or 32 bytes if it includes the instantiation vector (IV) after the key." 
+				  << std::endl; }
 		return;
 	}
+	
 	delete[](m_key); delete[](m_IV);
 	
 	m_key = new uint8_t[BLOCK_SIZE];
 	m_IV = new uint8_t[BLOCK_SIZE];
-		
-	std::memcpy(m_key, priKey, BLOCK_SIZE);
-	std::memcpy(m_IV, (priKey + BLOCK_SIZE), BLOCK_SIZE);
 	
-	// mcrypt_generic_init(td, key, key_len, IV);
+	std::memcpy(m_key, priKey, BLOCK_SIZE);	
+	if (priLen == BLOCK_SIZE){						// If key passed in only has the key 
+		for (int i = 0; i < BLOCK_SIZE; i++){		// 		Generate random IV
+			m_IV[i] = rand();
+		}	
+	} else {										// Else 
+		std::memcpy(m_IV, (priKey + BLOCK_SIZE), BLOCK_SIZE);	// Set key to the second 16 bytes of the key passed in
+	}
 	
-	std::cout << "Keys have been set" << std::endl;
+	if(DEBUG) std::cout << "Keys have been set" << std::endl;
 }
 
 void CryptoAES::destroyKeys()
 {
-	std::cout << "Destroying CryptoAES keys..." << std::endl;
+	if(DEBUG) std::cout << "Destroying CryptoAES keys..." << std::endl;
 	
-	delete[](m_key);	
-	m_key = nullptr;
+	delete[](m_key); delete[](m_IV);
 	
-	std::cout << "Keys have been destroyed" << std::endl;
+	m_IV = m_key = nullptr;
+	
+	if(DEBUG) std::cout << "Keys have been destroyed" << std::endl;
 }
 
 bool CryptoAES::encrypt(const uint8_t *data, uint32_t len)
 {
-	std::cout << "Encrypting data using CryptoAES..." << std::endl;
+	if(DEBUG) std::cout << "Encrypting data using CryptoAES..." << std::endl;
 	
-	uint8_t encrypted_data[len];
-	//for (int i = 0; i < len; i++){
-	//	encrypted_data[i] =
-	//}
+	if (m_key == nullptr){
+		if(DEBUG) std::cout << "Keys have not been set. Have genKeys() or setKeys() been called?" << std::endl;
+		return false;
+		
+	} else {
+		int fullBlocks = (int) (len / BLOCK_SIZE);
+		
+		for (int i = 0; i < fullBlocks; i++) { // Encrypt data a block (16 bytes) at a time
+			memcpy(m_buffer, &data[i], BLOCK_SIZE);
+		//	mcrypt_generic(m_td, m_buffer, BLOCK_SIZE);
+			m_encryptCallback(m_buffer, BLOCK_SIZE);
+		}	
+	    
+	//	mcrypt_generic_deinit (m_td);
+ 	//	mcrypt_module_close(m_td);
 	
-	m_encryptCallback(encrypted_data, len);
-	
-//	mcrypt_generic_init(td, key, key_len, IV);
-	
-	std::cout << "Data has been encrypted" << std::endl;
-	return true;
+		if(DEBUG) std::cout << "Data has been encrypted" << std::endl;
+		return true;
+	}
 }
 
 bool CryptoAES::decrypt(const uint8_t *data, uint32_t len)
 {
-	std::cout << "Decrypting data encrypted by CryptoAES..." << std::endl;
+	if(DEBUG) std::cout << "Decrypting data encrypted by CryptoAES..." << std::endl;
+	if (m_key == nullptr){
+		if(DEBUG) std::cout << "Keys have not been set. Have genKeys() or setKeys() been called?" << std::endl;
+		return false;
+		
+	} else {
+		uint8_t decrypted_data[len];
 	
-	uint8_t decrypted_data[len];
+		m_decryptCallback(decrypted_data, len);
 	
-	m_decryptCallback(decrypted_data, len);
-	
-	std::cout << "Data has been decrypted" << std::endl;
-	return true;
+		if(DEBUG) std::cout << "Data has been decrypted" << std::endl;
+		return true;
+	}
 } 

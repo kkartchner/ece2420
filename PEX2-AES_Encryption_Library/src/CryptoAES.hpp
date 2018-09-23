@@ -3,6 +3,7 @@
 
 #include "Crypto.hpp"
 #include <mcrypt.h>
+#include <sstream>
 
 /**
  * @class CryptoAES
@@ -35,7 +36,11 @@ private:
   MCRYPT m_td;
   uint8_t *m_key; // 16 bytes
   uint8_t *m_IV; // 16 bytes
-  static constexpr uint8_t BLOCK_SIZE = 16; // 16 bytes
+  static constexpr uint8_t KEY_SIZE = 16,  // 16 bytes
+                           IV_SIZE = 16,
+                           BLOCK_SIZE = 16; 
+  
+  uint8_t *m_buffer;
 };
 
 #endif /* CryptoAES_HPP */
