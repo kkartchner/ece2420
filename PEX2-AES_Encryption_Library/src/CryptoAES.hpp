@@ -40,7 +40,8 @@ private:
                            IV_SIZE = 16,
                            BLOCK_SIZE = 16; 
   
-  uint8_t *m_buffer;
+  std::stringstream m_buffer;
+  uint32_t m_bufferLen;
 };
 
 #endif /* CryptoAES_HPP */

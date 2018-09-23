@@ -1,4 +1,4 @@
-/*
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,12 +57,12 @@ void display(uint8_t* ciphertext, uint32_t len){
 int main()
 {
   MCRYPT td, td2;
-  uint8_t *plain_text = (uint8_t*) "test text 123";
+  uint8_t *plain_text = (uint8_t*) "test text 123test text 123test text 123test text 123";
   uint8_t *IV = (uint8_t*) "AAAAAAAAAAAAAAAA";
   uint8_t *key = (uint8_t*) "0123456789abcdef";
   uint32_t keysize = 16; // 128 bits
 	
-  uint32_t buffer_len = 16;
+  uint32_t buffer_len = 16 * 4;
   uint8_t* buffer = new uint8_t[buffer_len];
 
 
@@ -78,8 +78,7 @@ int main()
   return 0;
 }
 
-*/
-
+/*
 #include <mcrypt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -120,4 +119,4 @@ if (argv[argc-1] == "decrypt"){
   mcrypt_module_close(td);
 	
   return 0;
-}
+} */

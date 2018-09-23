@@ -10,7 +10,8 @@ CryptoAES::CryptoAES(std::function<void(const uint8_t *data, uint32_t len)> encr
  : Crypto(encryptCallback, decryptCallback) {	 
 	 m_td = mcrypt_module_open((char*)"rijndael-128", nullptr , (char*)"cbc", nullptr);
 	 
-	 m_buffer = new uint8_t[BLOCK_SIZE];
+	 m_buffer.str("");
+	 m_bufferLen = 0;
 	 
 	 srand(time(0));
  }
@@ -107,17 +108,23 @@ bool CryptoAES::encrypt(const uint8_t *data, uint32_t len)
 		return false;
 		
 	} else {
-		int fullBlocks = (int) (len / BLOCK_SIZE);
+		m_buffer.write((char*)data, len);  // Add all data to the buffer
+		m_bufferLen += len;
 		
-		for (int i = 0; i < fullBlocks; i++) { // Encrypt data a block (16 bytes) at a time
-			memcpy(m_buffer, &data[i], BLOCK_SIZE);
-		//	mcrypt_generic(m_td, m_buffer, BLOCK_SIZE);
-			m_encryptCallback(m_buffer, BLOCK_SIZE);
-		}	
-	    
-	//	mcrypt_generic_deinit (m_td);
- 	//	mcrypt_module_close(m_td);
-	
+		mcrypt_generic_init(m_td, m_key, KEY_SIZE, m_IV);
+		
+		while (m_bufferLen >= BLOCK_SIZE){						// Encrypt data one block (16 bytes) at a time
+			uint8_t *data_block = new uint8_t[BLOCK_SIZE];
+			m_buffer.read((char*) data_block, BLOCK_SIZE);
+			m_bufferLen -= BLOCK_SIZE;		
+			
+  	  		mdecrypt_generic(m_td, data_block, BLOCK_SIZE);  	// Encrypt current block
+			
+			m_encryptCallback(data_block, len);					// Encrypt callback on each block
+		}
+		
+		mcrypt_generic_deinit (m_td);
+		
 		if(DEBUG) std::cout << "Data has been encrypted" << std::endl;
 		return true;
 	}
