@@ -17,6 +17,8 @@ public:
   */
   CryptoAES(std::function<void(const uint8_t *data, uint32_t len)> encryptCallback,
 	    std::function<void(const uint8_t *data, uint32_t len)> decryptCallback);
+	
+ ~CryptoAES();
  
   virtual void genKeys() override;
  
@@ -34,11 +36,9 @@ public:
 
 private:
   MCRYPT m_td;
-  uint8_t *m_key; // 16 bytes
-  uint8_t *m_IV; // 16 bytes
-  static constexpr uint8_t KEY_SIZE = 16,  // 16 bytes
-                           IV_SIZE = 16,
-                           BLOCK_SIZE = 16; 
+  uint8_t *m_key, // 16 bytes
+          *m_IV; // 16 bytes
+  static constexpr uint8_t BLOCK_SIZE = 16; // 16 bytes
   
   std::stringstream m_buffer;
   uint32_t m_bufferLen;

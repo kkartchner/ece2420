@@ -4,6 +4,7 @@
 #include <cstring>
 
 #define DEBUG 0
+#define DEBUG2 0
 
 CryptoAES::CryptoAES(std::function<void(const uint8_t *data, uint32_t len)> encryptCallback,
 	    std::function<void(const uint8_t *data, uint32_t len)> decryptCallback) 
@@ -15,6 +16,11 @@ CryptoAES::CryptoAES(std::function<void(const uint8_t *data, uint32_t len)> encr
 	 
 	 srand(time(0));
  }
+
+CryptoAES::~CryptoAES(){
+	mcrypt_generic_deinit(m_td);
+	mcrypt_module_close(m_td);
+}
 
 void CryptoAES::genKeys()
 {
@@ -85,6 +91,8 @@ void CryptoAES::setKeys(const uint8_t *pubKey, uint32_t pubLen,
 		std::memcpy(m_IV, (priKey + BLOCK_SIZE), BLOCK_SIZE);	// Set key to the second 16 bytes of the key passed in
 	}
 	
+	mcrypt_generic_init(m_td, m_key, BLOCK_SIZE, m_IV);		
+	
 	if(DEBUG) std::cout << "Keys have been set" << std::endl;
 }
 
@@ -107,23 +115,67 @@ bool CryptoAES::encrypt(const uint8_t *data, uint32_t len)
 		if(DEBUG) std::cout << "Keys have not been set. Have genKeys() or setKeys() been called?" << std::endl;
 		return false;
 		
+	} else if (len == 0 || data == nullptr){
+		if(DEBUG2) std::cout << "Encrypt flush initiated.." << std::endl;
+		mcrypt_generic_init(m_td, m_key, BLOCK_SIZE, m_IV);
+		m_buffer.str("");
+		m_bufferLen = 0;
+		
+		if(DEBUG2) std::cout << "Buffer flushed and mcrypt reinitialized" << std::endl;
+		return true;
+		
 	} else {
-		m_buffer.write((char*)data, len);  // Add all data to the buffer
-		m_bufferLen += len;
+		m_buffer.str("");
+		m_buffer.write((char*)data, len);  						// Add all data to the buffer
+		m_bufferLen = len;										
 		
-		mcrypt_generic_init(m_td, m_key, KEY_SIZE, m_IV);
+		uint8_t *data_block = new uint8_t[BLOCK_SIZE];
 		
-		while (m_bufferLen >= BLOCK_SIZE){						// Encrypt data one block (16 bytes) at a time
-			uint8_t *data_block = new uint8_t[BLOCK_SIZE];
-			m_buffer.read((char*) data_block, BLOCK_SIZE);
-			m_bufferLen -= BLOCK_SIZE;		
+		while (m_bufferLen >= BLOCK_SIZE){						// Encrypt data one (full) block (16 bytes) at a time
+			m_buffer.read((char*) data_block, BLOCK_SIZE);		// Read data into data_block
+			m_bufferLen -= BLOCK_SIZE;							// "Remove" block of data
 			
-  	  		mdecrypt_generic(m_td, data_block, BLOCK_SIZE);  	// Encrypt current block
+			mcrypt_generic(m_td, data_block, BLOCK_SIZE);  		// Encrypt current block
 			
-			m_encryptCallback(data_block, len);					// Encrypt callback on each block
+			m_encryptCallback(data_block, len);					// Call encryptCallback() on each block		 		
 		}
 		
-		mcrypt_generic_deinit (m_td);
+		if (DEBUG2) std::cout << "m_bufferLen: " << m_bufferLen << std::endl; 
+		
+		if (m_bufferLen != 0){									// If there is still info in the buffer
+			uint8_t padNum = (BLOCK_SIZE - m_bufferLen);		// Pad the last block with pad num, padnum times, then encrypt
+			
+			if(DEBUG2)  std::cout << "padNum: " << (int) padNum << std::endl; 
+			
+			m_buffer.read((char*) data_block, m_bufferLen);
+			
+			for (int i = m_bufferLen; i < BLOCK_SIZE; i++){
+			//	if(DEBUG2)  std::cout << "data_block["<< i << "]:" << (int) data_block[i] << std::endl; 
+				
+				data_block[i] = padNum;  
+				
+			//	if(DEBUG2)  std::cout << "data_block["<< i << "]:" << "changed to: " << (int) data_block[i] << std::endl; 
+				
+			}
+		
+			if(DEBUG2){
+				std::cout << "data_block: ";
+				for (int i = 0; i < BLOCK_SIZE; i++){
+					 std::cout << (int) data_block[i] << " "; 
+				}
+				std::cout << std::endl;
+			}	
+			
+			mcrypt_generic(m_td, data_block, BLOCK_SIZE);  	// Encrypt current block
+			
+			if(DEBUG2){
+				std::cout << "data_block after encrypt:";
+				for (int i = 0; i < BLOCK_SIZE; i++){
+					 std::cout << (int) data_block[i] << " "; 
+				}
+				std::cout << std::endl;
+			}	
+		}
 		
 		if(DEBUG) std::cout << "Data has been encrypted" << std::endl;
 		return true;
@@ -132,17 +184,80 @@ bool CryptoAES::encrypt(const uint8_t *data, uint32_t len)
 
 bool CryptoAES::decrypt(const uint8_t *data, uint32_t len)
 {
-	if(DEBUG) std::cout << "Decrypting data encrypted by CryptoAES..." << std::endl;
+	if(DEBUG2) std::cout << "Decrypting data encrypted by CryptoAES..." << std::endl;
+	
 	if (m_key == nullptr){
 		if(DEBUG) std::cout << "Keys have not been set. Have genKeys() or setKeys() been called?" << std::endl;
 		return false;
 		
-	} else {
-		uint8_t decrypted_data[len];
-	
-		m_decryptCallback(decrypted_data, len);
-	
-		if(DEBUG) std::cout << "Data has been decrypted" << std::endl;
+	} else if (len == 0 || data == nullptr){
+		if(DEBUG2) std::cout << "Decrypt flush initiated.." << std::endl;
+		
+		mcrypt_generic_init(m_td, m_key, BLOCK_SIZE, m_IV);
+		m_buffer.str("");
+		m_bufferLen = 0;
+		
+		if(DEBUG2) std::cout << "Buffer flushed and mcrypt reinitialized" << std::endl;
 		return true;
-	}
-} 
+		
+	} else { 
+		m_buffer.str("");
+		m_buffer.write((char*)data, len);  						// Add all data to the buffer
+		m_bufferLen = len;										
+		
+		uint8_t *data_block = new uint8_t[BLOCK_SIZE];
+															    /* Decrypt all full blocks */
+		while (m_bufferLen >= BLOCK_SIZE){							// Encrypt data one (full) block (16 bytes) at a time
+			m_buffer.read((char*) data_block, BLOCK_SIZE);			// Read data into data_block
+			m_bufferLen -= BLOCK_SIZE;								// "Remove" block of data
+			
+			mdecrypt_generic(m_td, data_block, BLOCK_SIZE);  		// Encrypt current block
+			
+			m_decryptCallback(data_block, len);						// Call encryptCallback() on each block		 		
+		}
+		
+		
+		if (DEBUG2) std::cout << "m_bufferLen: " << m_bufferLen << std::endl; 
+		
+																/* Encrypt remaining partial block */
+		if (m_bufferLen != 0){										// If there is still info in the buffer
+			uint8_t padNum = (BLOCK_SIZE - m_bufferLen);			// Pad the last block with pad num, padnum times, then encrypt
+			
+			if(DEBUG2)  std::cout << "padNum: " << (int) padNum << std::endl; 
+			
+			m_buffer.read((char*) data_block, m_bufferLen);			
+			
+			for (int i = m_bufferLen; i < BLOCK_SIZE; i++){
+				if(DEBUG2)  std::cout << "data_block["<< i << "]:" << (int) data_block[i] << std::endl; 
+				
+				data_block[i] = padNum;  
+				
+				if(DEBUG2)  std::cout << "data_block["<< i << "]:" << "changed to: " << (int) data_block[i] << std::endl; 
+				
+			}
+		
+			if(DEBUG2){
+				std::cout << "data_block: ";
+				for (int i = 0; i < BLOCK_SIZE; i++){
+					 std::cout << (int) data_block[i] << " "; 
+				}
+				std::cout << std::endl;
+			}	
+			
+			mdecrypt_generic(m_td, data_block, BLOCK_SIZE);  	// Encrypt current block
+			
+			if(DEBUG2){
+				std::cout << "data_block after encrypt:";
+				for (int i = 0; i < BLOCK_SIZE; i++){
+					 std::cout << (int) data_block[i] << " "; 
+				}
+				std::cout << std::endl;
+			}	
+		}
+		
+		mcrypt_generic_deinit (m_td);
+		
+		if(DEBUG) std::cout << "Data has been encrypted" << std::endl;
+		return true;
+	} 
+}
