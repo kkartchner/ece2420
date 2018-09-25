@@ -1,0 +1,15 @@
+<cstring>
+uint8_t BLOCK_SIZE = 16;
+
+std::memcpy((*priKey) + 0, m_priKey, BLOCK_SIZE);
+std::memcpy((*priKey) + BLOCK_SIZE, m_IV, BLOCK_SIZE);
+
+
+-----------
+
+
+AES
+
+Buffer (string stream): store all data into the buffer when encrypt is called. Encrypt each block (16 bytes)
+
+IV: Initialization vector (random 16-bit number)

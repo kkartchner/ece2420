@@ -58,7 +58,7 @@ pmain: $(BDIR)/$(PNAME)
 tmain: $(BDIR)/test
 $(PNAME): | toolchain pmain
 test: | toolchain tmain
-	./$(BDIR)/crypto
+	./$(BDIR)/test
 
 $(DDIR):
 	@mkdir $(DDIR)

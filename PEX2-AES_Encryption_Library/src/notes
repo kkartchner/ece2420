@@ -1,0 +1,122 @@
+//
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <mcrypt.h>
+
+#include <math.h>
+#include <stdint.h>
+
+int encrypt(
+    uint8_t* buffer,
+    uint32_t buffer_len, //Because the plauint32_text could include null bytes
+    uint8_t* IV, 
+    uint8_t* key,
+    uint32_t key_len 
+){
+  MCRYPT td = mcrypt_module_open((char*) "rijndael-128", nullptr, (char*) "cbc", nullptr);
+  uint32_t blocksize = mcrypt_enc_get_block_size(td);
+  if( buffer_len % blocksize != 0 ){return 1;}
+
+  mcrypt_generic_init(td, key, key_len, IV);
+  mcrypt_generic(td, buffer, buffer_len);
+  mcrypt_generic_deinit (td);
+  mcrypt_module_close(td);
+  
+  return 0;
+}
+
+int decrypt(
+    uint8_t* buffer,
+    uint32_t buffer_len,
+    uint8_t* IV, 
+    uint8_t* key,
+    uint32_t key_len 
+){
+  MCRYPT td = mcrypt_module_open((char*) "rijndael-128", nullptr, (char*) "cbc", nullptr);
+  uint32_t blocksize = mcrypt_enc_get_block_size(td);
+  if( buffer_len % blocksize != 0 ){return 1;}
+  
+  mcrypt_generic_init(td, key, key_len, IV);
+  mdecrypt_generic(td, buffer, buffer_len);
+  mcrypt_generic_deinit (td);
+  mcrypt_module_close(td);
+  
+  return 0;
+}
+
+void display(uint8_t* ciphertext, uint32_t len){
+  uint32_t v;
+  for (v=0; v<len; v++){
+    printf("%d ", ciphertext[v]);
+  }
+  printf("\n");
+}
+
+int main()
+{
+  MCRYPT td, td2;
+  uint8_t *plain_text = (uint8_t*) "test text 123test text 123test text 123test text 123";
+  uint8_t *IV = (uint8_t*) "AAAAAAAAAAAAAAAA";
+  uint8_t *key = (uint8_t*) "0123456789abcdef";
+  uint32_t keysize = 16; // 128 bits
+	
+  uint32_t buffer_len = 16 * 4;
+  uint8_t* buffer = new uint8_t[buffer_len];
+
+
+  memcpy(buffer, plain_text, buffer_len);
+
+  printf("==C==\n");
+  printf("plain:   %s\n", plain_text);
+  encrypt(buffer, buffer_len, IV, key, keysize); 
+  printf("cipher:  "); display(buffer, buffer_len);
+  decrypt(buffer, buffer_len, IV, key, keysize);
+  printf("decrypt: %s\n", buffer);
+  
+  return 0;
+}
+
+/*
+#include <mcrypt.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <memory>
+#include <cstring>
+#include <iostream>
+
+int main(int argc, char** argv) {
+  MCRYPT td = mcrypt_module_open((char*) "rijndael-128", nullptr, (char*) "cbc", nullptr);
+  
+  uint32_t blocksize = mcrypt_enc_get_block_size(td);
+  uint32_t keysize = mcrypt_enc_get_key_size(td);
+	
+  uint8_t *key = (uint8_t*)"anthropomorphous";
+  uint8_t *IV =  (uint8_t*)"adthropomorphous";
+
+  uint8_t *block_buffer = new uint8_t[blocksize];
+	
+  mcrypt_generic_init(td, key, keysize, IV);
+	
+// Encryption in CBC is performed in blocks
+if (argv[argc-1] == "decrypt"){
+	while ( fread (block_buffer, 1, blocksize, stdin) == blocksize) {
+	  mdecrypt_generic (td, block_buffer, blocksize); 
+	  
+	  fwrite ( block_buffer, 1, blocksize, stdout);
+  }
+} else {
+  while ( fread (block_buffer, 1, blocksize, stdin) == blocksize) {
+	  mcrypt_generic (td, block_buffer, blocksize);
+	  
+	  fwrite ( block_buffer, 1, blocksize, stdout);
+  }
+
+}
+	
+  mcrypt_generic_deinit (td);
+  mcrypt_module_close(td);
+	
+  return 0;
+} */ 
