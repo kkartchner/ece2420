@@ -255,7 +255,7 @@ bool CryptoAES::decrypt(const uint8_t *data, uint32_t len)
 			padNum = data_block[BLOCK_SIZE-1];						// Remove padding
 			firstPad = BLOCK_SIZE - padNum;
 			
-			bool inRange = (firstPad < BLOCK_SIZE && firstPad >= 0);
+			bool inRange = (firstPad < BLOCK_SIZE && firstPad > 0);
 			
 			if (inRange && data_block[firstPad] == padNum){					// If first padding exists
 				m_decryptCallback(data_block, firstPad);	
