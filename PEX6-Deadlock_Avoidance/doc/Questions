@@ -1,0 +1,7 @@
+How are threads incorporated? 
+  -Does each head have it's own thread? 
+    -What function would it use? execute?
+    -Is execute() a function that is continous? Or called from a main class
+
+
+
