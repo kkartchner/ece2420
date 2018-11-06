@@ -18,7 +18,7 @@ CPPL       = g++ $(CPPFLAGS)
 POSTCPPC   = @mv -f $(DDIR)/$*.Td $(DDIR)/$*.d && touch $@
 
 #List all main cpp files
-SRCS   = main.cpp
+SRCS   = main.cpp tallyTest.cpp timerTest.cpp
 _BINS  = $(patsubst %.cpp,$(BDIR)/%,$(SRCS))
 
 #List all other files

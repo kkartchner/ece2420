@@ -3,70 +3,56 @@
 
 #include "Head.hpp" 
 
-#include <thread>
 #include <mutex>
 
 class DriveHead : public Head
 {
 public:
+/*** Constructor **/
   /**
-  * @brief Construct a drive head that knows its right and left neighboring
-  * heads.
+  * @brief Default constructor
   * 
-  * @param lNeighbor The head's left neighboring head
-  * @param rNeighbor The head's right neighboring head
-  */
-  /*DriveHead(std::vector<std::shared_ptr<Head> > &platter, 
-            int indexInPlatter); // std::vector<std::mutex> &mtx);
+  * Constructs the DriveHead including the creation of the mutex that 
+  * belongs to this DriveHead (the object that m_mtx1_sp points to).
   */
   DriveHead();
   
-  DriveHead(DriveHead *driveHeadArray, int arraySize, int platterIndex);
- /* DriveHead(std::shared_ptr<DriveHead> lNeighbor,
-            std::shared_ptr<DriveHead> rNeighbor,
-            std::mutex &mtx
-           );
-  */
-  
-  
+/*** Methods **/
   /**
   * @brief Override the base class execute function
-  * 
+  *
+  * Executes the provided action in a thread safe matter. (No two
+  * adjacent head can be executing at the same time).
+  *
   * @param action The action to perform
   */
   virtual void execute(std::function<void()> action) override;  
   
   /**
-  * @brief Enables the drive head
+  * @brief Swap the mutex grab order
+  * 
+  * Swaps the mutex pointers, so that the order they are grabbed in
+  * the execute function is swapped as well.
   */
-  void enable(){ m_enabled = true; }
+  void swapMtxOrder();
+  
+/*** Data Members ****/
   /**
-  * @brief Disables the drive head
-  */
-  void disable(){ m_enabled = false;}
+  * @brief First mutex to grab. 
+  *
+  * Typically the head's own mutex. But it will be the right neighbor's for 
+  * the last head in order to prevent deadlock.
+  */  
+  std::shared_ptr<std::mutex> m_mtx1_sp;
   /**
-  * @brief Return true if enabled, false if not    /**
-  * @brief Assign m_lNeighbor and m_rNeighbor shared pointers based
-  * based on platter location.
-  */
+  * @brief Second mutex to grab. 
+  *
+  * Typically a pointer to the right neighbor's mutex. But it will
+  * the head's own mutex if it is the last head, again in order to
+  * prevent deadlock
+  */  
+  std::shared_ptr<std::mutex> m_mtx2_sp;
   
-  bool m_enabled;
-  
-  //bool isActive(){ return enabled; };
-  
-  std::shared_ptr<std::thread> m_thread_ptr;
-  
-private:
-    /**
-  * @brief Assign m_lNeighbor and m_rNeighbor shared pointers based
-  * based on platter location.
-  */
-  void genNeighborSharedPtrs();
-  
-  int m_platterIndex;
-
-  DriveHead *m_lNeighbor_ptr;
-  DriveHead *m_rNeighbor_ptr;
 };
 
 #endif /* DRIVE_HEAD_HPP */

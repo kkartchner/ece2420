@@ -1,13 +1,19 @@
-#include "DriveHead.hpp"
+#include "Head.hpp"
 
 #include <iostream>
 
 #define DEBUG 1
 
+#include <thread>
+#include <unistd.h>
+#include <mutex>
+
+std::mutex mtx;
+
 void action(){
-  for (int i = 0; i < 5; i++){
-    std::cout << "Action performed." << std::endl; 
-  }
+  sleep(1);
+  std::unique_lock<std::mutex> lck (mtx);
+  std::cout << "Action completed." << std::endl; 
 }
 
 int main (int argc, char** argv){
@@ -28,19 +34,22 @@ int main (int argc, char** argv){
   
   auto platter = Head::makePlatter(headNum);
   
+  /*std::cout << "headPlatter size: " << headPlatter.size() 
+            << "\nheadPlatter[0]: " << headPlatter.front()
+            << "\nheadPlater[last]: " << headPlatter.back() << std::endl;
+  */
+  
   std::shared_ptr<std::thread> threads[headNum];
   for (int i = 0; i < headNum; i++)
   {
     threads[i] = std::make_shared<std::thread>(&Head::execute, platter[i], action);
   }
- /* std::cout << "headPlatter size: " << headPlatter.size() 
-            << "\nheadPlatter[0]: " << headPlatter.front()
-            << "\nheadPlater[last]: " << headPlatter.back() << std::endl;
-  */
-  
+
+
   for (auto t : threads){
     t->join();
   }
+  
   
   return 0;
 }
