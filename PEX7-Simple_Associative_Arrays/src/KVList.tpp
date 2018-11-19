@@ -8,7 +8,7 @@ template<class K, class V>
  */
 KVListNode<K,V>& KVListNode<K,V>::operator=(const KVListNode<K,V> &other)
 {
-    std::cout << "KVListNode assn operator called." << std::endl;
+   /* std::cout << "KVListNode assn operator called." << std::endl;*/
     m_key_sp.reset(new K(*(other.m_key_sp)));   
     m_val_sp.reset(new V(*(other.m_val_sp))); 
 
@@ -35,7 +35,7 @@ KVList<K,V>::KVList()
     template<class K, class V>
 KVList<K,V>::KVList(const KVList<K,V> &other)
 {
-    std::cout << "copy ctor called." << std::endl;
+    //std::cout << "copy ctor called." << std::endl;
     *this = other;    
 }
 /**
@@ -49,7 +49,7 @@ KVList<K,V>::KVList(const KVList<K,V> &other)
     template<class K, class V>
 KVList<K,V>& KVList<K,V>::operator=(const KVList<K,V> &other)
 {
-    std::cout << "assignment operator called." << std::endl;
+    //std::cout << "assignment operator called." << std::endl;
     if (this == &other){ // Prevent potential problems from self-assignment
         return *this;
     }
@@ -63,6 +63,9 @@ KVList<K,V>& KVList<K,V>::operator=(const KVList<K,V> &other)
     while (curOther != nullptr){
         std::shared_ptr<KVListNode<K,V> > newNode(new KVListNode<K,V>);
         *newNode = *curOther; // Copy current node of other into newNode
+
+       /* std::cout << "newNode: " << *(newNode->m_key_sp) << "("<< newNode <<")\n"
+            "curOther: " << *(curOther->m_key_sp) << "("<< curOther<< ")" << std::endl;*/
 
         prevNode->m_next_sp = newNode; // Connect newNode to previous node
         newNode->m_prev_wp = prevNode;
@@ -132,11 +135,11 @@ std::shared_ptr<V> KVList<K,V>::get(const K &key)
 
     if (!curNode || *(curNode->m_key_sp) != key){ // If curNode is null, or curNode's value does not equal
         // the key provided
-        std::cout << "Key \"" << key << "\" not found in list. Get unsuccessful." << std::endl;
+        /* std::cout << "Key \"" << key << "\" not found in list. Get unsuccessful." << std::endl;*/
+
         return nullptr;
     } else { // curNode is not null and value is found
-        std::cout << "Value \""<< *(curNode->m_val_sp) << "\" found at key \"" << key << "\" "<<  std::endl;
-
+        /*        std::cout << "Value \""<< *(curNode->m_val_sp) << "\" found at key \"" << key << "\" "<<  std::endl;*/
         return curNode->m_val_sp;
     }
 } 
@@ -173,31 +176,28 @@ std::shared_ptr<KVListNode <K,V> > KVList<K,V>::insertInternal(const K &key, con
     newNode->m_key_sp.reset(new K(key));
     newNode->m_val_sp.reset(new V(val));
 
+    del(key); // Remove value at key if it already exists
+
     // Find where newNode should be inserted into the list (ordered least to greatest by key)
     while (curNode && key > *(curNode->m_key_sp)){
         prevNode = curNode;
         curNode = curNode->m_next_sp;
     }
 
-    if (curNode && key == *(curNode->m_key_sp)){ // If key already exists
-        std::cout << "Key \"" << key << "\" already in use."
-            " Key/val not inserted." << std::endl;
-    } else { // Correctly insert newNode before curNode:
-        newNode->m_next_sp = curNode; 
-        if (curNode){ // curNode is not null
-            curNode->m_prev_wp = newNode;
-        }
-        if (curNode == m_rootNode_sp){ // If newNode was inserted before the root node
-            root = newNode;     //     return as the new root node
-        } else {                
-            prevNode->m_next_sp = newNode;
-            newNode->m_prev_wp = prevNode;
-        }
-
-        std::cout << "Key \"" << key << "\" with value \"" << val << "\""
-            " successfully inserted." << std::endl;
-
+    // Correctly insert newNode before curNode:
+    newNode->m_next_sp = curNode; 
+    if (curNode){ // curNode is not null
+        curNode->m_prev_wp = newNode;
     }
+    if (curNode == m_rootNode_sp){ // If newNode was inserted before the root node
+        root = newNode;     //     return as the new root node
+    } else {                
+        prevNode->m_next_sp = newNode;
+        newNode->m_prev_wp = prevNode;
+    }
+
+    /*     std::cout << "Key \"" << key << "\" with value \"" << val << "\""
+           " successfully inserted." << std::endl;*/
 
     return root;
 }
@@ -218,15 +218,11 @@ std::shared_ptr<KVListNode <K,V> > KVList<K,V>::delInternal(const K &key)
         curNode = curNode->m_next_sp;
     }
 
-    if (!curNode || *(curNode->m_key_sp) != key){ // If curNode is null, or curNode's value does not equal
-        // the key provided
-        std::cout << "Key \"" << key << "\" not found in list. Remove unsuccessful." << std::endl;
-
-    } else { // curNode is not null and value is found
+    if (curNode && *(curNode->m_key_sp) == key){ // If curNode is not null and value is found
         // Delete the key/val pair:
         if (prevNode){                      // If prevNode is not null 
-            prevNode->m_next_sp = curNode->m_next_sp; //      Remove curNode by changing prevNode's m_next_sp
-            //      from curNode to curNode's m_next_sp
+            prevNode->m_next_sp = curNode->m_next_sp; // Remove curNode by changing prevNode's m_next_sp
+                                                      //   from curNode to curNode's m_next_sp
             if (curNode->m_next_sp){           // If curNode's next is not null
                 curNode->m_next_sp->m_prev_wp = prevNode; // Link it back to prevNode
             }
@@ -235,7 +231,7 @@ std::shared_ptr<KVListNode <K,V> > KVList<K,V>::delInternal(const K &key)
             root = curNode->m_next_sp; // So return the node after curNode as the new root
         }
 
-        std::cout << "Key \"" << key << "\" and associated value successfully removed." << std::endl;
+        /*        std::cout << "Key \"" << key << "\" and associated value successfully removed." << std::endl; */
 
     }
 

@@ -1,4 +1,4 @@
-#Project Tree Structure
+#project tree structure
 LDIR = lib
 SDIR = src
 ODIR = obj
