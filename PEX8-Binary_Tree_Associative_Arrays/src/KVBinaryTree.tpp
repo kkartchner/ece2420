@@ -15,13 +15,10 @@ KVBinaryTreeNode<K,V>& KVBinaryTreeNode<K,V>::operator=(const KVBinaryTreeNode<K
 }
 /**
  * @brief Constructor
- * 
- * This ctor creates a valid root node
  */
     template<class K, class V>
 KVBinaryTree<K,V>::KVBinaryTree()
 {
-    // m_rootNode_sp.reset(new KVBinaryTreeNode<K,V>);
     m_rootNode_sp = nullptr;
 }
 /**
@@ -72,9 +69,9 @@ std::shared_ptr<KVBinaryTreeNode<K,V> > KVBinaryTree<K,V>::copyPreOrder(const st
 
     // Assign newNode's leftChild to copy of curNode's leftChild:   
     newNode->m_leftChild_sp = copyPreOrder(curNode->m_leftChild_sp);
-
-    // Assign newNode's rightChild to copy of curNode's righChild:
-    newNode->m_rightChild_sp = copyPreOrder(curNode->m_rightChild_sp); 
+    1
+        // Assign newNode's rightChild to copy of curNode's righChild:
+        newNode->m_rightChild_sp = copyPreOrder(curNode->m_rightChild_sp); 
 
     return newNode;
 }
@@ -163,8 +160,13 @@ void KVBinaryTree<K,V>::traverseInOrder(std::shared_ptr<KVBinaryTreeNode<K,V> > 
     if (curNode == nullptr)
         return;
 
+    // Traverse left child subtree:
     traverseInOrder(curNode->m_leftChild_sp, callback);
+
+    // Execute callback on current node:
     callback(*(curNode->m_key_sp), *(curNode->m_val_sp));
+
+    // Traverse right child subtree:
     traverseInOrder(curNode->m_rightChild_sp, callback); 
 }
 
@@ -190,10 +192,10 @@ std::shared_ptr<KVBinaryTreeNode <K,V> > KVBinaryTree<K,V>::insertInternal(const
     } else {
         // Find where newNode should be inserted into the list (ordered least to greatest by key)
         while (curNode){
-            if (key < *(curNode->m_key_sp)){
+            if (key < *(curNode->m_key_sp)){ // Key less than curNode's key
                 prevNode = curNode;
                 curNode = curNode->m_leftChild_sp;
-            } else if (key > *(curNode->m_key_sp)) {
+            } else if (key > *(curNode->m_key_sp)) { // Key greater than curNode's key
                 prevNode = curNode;
                 curNode = curNode->m_rightChild_sp;
             } else {
@@ -226,12 +228,10 @@ std::shared_ptr<KVBinaryTreeNode <K,V> > KVBinaryTree<K,V>::delInternal(const K 
         root = m_rootNode_sp;
     if (root){
         while (curNode){
-            if (key < *(curNode->m_key_sp)){
-                // Key less than curNode's key
+            if (key < *(curNode->m_key_sp)){ // Key less than curNode's key
                 prevNode = curNode;
                 curNode = curNode->m_leftChild_sp;
-            } else if (key > *(curNode->m_key_sp)) {
-                // Key greater than curNode's key
+            } else if (key > *(curNode->m_key_sp)) {  // Key greater than curNode's key
                 prevNode = curNode;
                 curNode = curNode->m_rightChild_sp;
             } else { 

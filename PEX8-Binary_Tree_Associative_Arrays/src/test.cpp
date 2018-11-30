@@ -19,8 +19,8 @@ int main(int argc, char** argv){
         scoreBoard.insert(name, score);
     }
 
-    KVBinaryTree<std::string, int> scoreBoardCopy(scoreBoard);
-
+   KVBinaryTree<std::string, int> scoreBoardCopy(scoreBoard);
+/*
     scoreBoard.insert("Person11", 100);
 
     auto scoreBoard3 = scoreBoardCopy;
@@ -38,6 +38,6 @@ int main(int argc, char** argv){
 
     std::cout << "\nScoreboard3:" << std::endl;
     scoreBoard3.forEach(printScore);
-
+*/
     return 0;
 }
