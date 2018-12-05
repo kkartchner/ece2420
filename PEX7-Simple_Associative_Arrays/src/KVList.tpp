@@ -8,7 +8,6 @@ template<class K, class V>
  */
 KVListNode<K,V>& KVListNode<K,V>::operator=(const KVListNode<K,V> &other)
 {
-   /* std::cout << "KVListNode assn operator called." << std::endl;*/
     m_key_sp.reset(new K(*(other.m_key_sp)));   
     m_val_sp.reset(new V(*(other.m_val_sp))); 
 
@@ -35,7 +34,6 @@ KVList<K,V>::KVList()
     template<class K, class V>
 KVList<K,V>::KVList(const KVList<K,V> &other)
 {
-    //std::cout << "copy ctor called." << std::endl;
     *this = other;    
 }
 /**
@@ -54,26 +52,25 @@ KVList<K,V>& KVList<K,V>::operator=(const KVList<K,V> &other)
         return *this;
     }
 
-    m_rootNode_sp.reset(new KVListNode<K,V>); 
-    *m_rootNode_sp = *(other.m_rootNode_sp); // Copy the root node from other to this
+    if (other.m_rootNode_sp){
+        m_rootNode_sp.reset(new KVListNode<K,V>); 
+        *m_rootNode_sp = *(other.m_rootNode_sp); // Copy the root node from other to this
 
-    auto curOther = other.m_rootNode_sp->m_next_sp,
-         prevNode = m_rootNode_sp;
+        std::shared_ptr<KVListNode<K,V> > curOther = other.m_rootNode_sp->m_next_sp,
+            prevNode = m_rootNode_sp;
 
-    while (curOther != nullptr){
-        std::shared_ptr<KVListNode<K,V> > newNode(new KVListNode<K,V>);
-        *newNode = *curOther; // Copy current node of other into newNode
+        while (curOther != nullptr){
+            std::shared_ptr<KVListNode<K,V> > newNode(new KVListNode<K,V>);
+            *newNode = *curOther; // Copy current node of other into newNode
 
-       /* std::cout << "newNode: " << *(newNode->m_key_sp) << "("<< newNode <<")\n"
-            "curOther: " << *(curOther->m_key_sp) << "("<< curOther<< ")" << std::endl;*/
+            prevNode->m_next_sp = newNode; // Connect newNode to previous node
+            newNode->m_prev_wp = prevNode;
 
-        prevNode->m_next_sp = newNode; // Connect newNode to previous node
-        newNode->m_prev_wp = prevNode;
+            prevNode = newNode; // Advance to next node in other list for copying
+            curOther = curOther->m_next_sp;
 
-        prevNode = newNode; // Advance to next node in other list for copying
-        curOther = curOther->m_next_sp;
+        }
     }
-
     return *this;
 }
 /**
@@ -196,9 +193,6 @@ std::shared_ptr<KVListNode <K,V> > KVList<K,V>::insertInternal(const K &key, con
         newNode->m_prev_wp = prevNode;
     }
 
-    /*     std::cout << "Key \"" << key << "\" with value \"" << val << "\""
-           " successfully inserted." << std::endl;*/
-
     return root;
 }
 /**
@@ -222,7 +216,7 @@ std::shared_ptr<KVListNode <K,V> > KVList<K,V>::delInternal(const K &key)
         // Delete the key/val pair:
         if (prevNode){                      // If prevNode is not null 
             prevNode->m_next_sp = curNode->m_next_sp; // Remove curNode by changing prevNode's m_next_sp
-                                                      //   from curNode to curNode's m_next_sp
+            //   from curNode to curNode's m_next_sp
             if (curNode->m_next_sp){           // If curNode's next is not null
                 curNode->m_next_sp->m_prev_wp = prevNode; // Link it back to prevNode
             }
@@ -230,9 +224,6 @@ std::shared_ptr<KVListNode <K,V> > KVList<K,V>::delInternal(const K &key)
         } else {    // Else the node being deleted is the root node
             root = curNode->m_next_sp; // So return the node after curNode as the new root
         }
-
-        /*        std::cout << "Key \"" << key << "\" and associated value successfully removed." << std::endl; */
-
     }
 
     return root;

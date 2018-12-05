@@ -69,7 +69,7 @@ std::shared_ptr<KVBinaryTreeNode<K,V> > KVBinaryTree<K,V>::copyPreOrder(const st
 
     // Assign newNode's leftChild to copy of curNode's leftChild:   
     newNode->m_leftChild_sp = copyPreOrder(curNode->m_leftChild_sp);
-    1
+    
         // Assign newNode's rightChild to copy of curNode's righChild:
         newNode->m_rightChild_sp = copyPreOrder(curNode->m_rightChild_sp); 
 
